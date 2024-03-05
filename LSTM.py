@@ -1,84 +1,90 @@
-import pandas as pd
+# importing required libraries
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, LSTM
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
-from tensorflow.keras.optimizers import Adam
-from sklearn.metrics import mean_squared_error
+import pandas as pd
 import matplotlib.pyplot as plt
 
+# creating dataframe
 
-# Load the dataset
-df = pd.read_csv("proc_csvs/a.csv")
+df = pd.read_csv("aapl.csv")
+data = df.sort_index(ascending=True, axis=0)
+new_data = pd.DataFrame(index=range(0, len(df)), columns=["Date", "Close"])
+for i in range(0, len(data)):
+    new_data["Date"][i] = data["Date"][i]
+    new_data["Close"][i] = data["Close"][i]
 
-# Convert the "Date" column to a pandas datetime object
-df["Date"] = pd.to_datetime(df["Date"])
+# setting index
+new_data = new_data[new_data["Date"] > "2010-01-01"]
+new_data.index = new_data.Date
+new_data.drop("Date", axis=1, inplace=True)
 
-# Extract the month from the "Date" column and create a new "Month" feature
-df["Month"] = df["Date"].dt.month
+# creating train and test sets
+dataset = new_data.values
 
-# Select features (X) and target variable (y)
-features = df.drop(
-    ["Date", "Close", "SMA_200"], axis=1
-)  # Exclude non-numeric and target columns
-target = df["Close"]
+train = dataset[0:987, :]
+valid = dataset[987:, :]
 
-# Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(
-    features, target, test_size=0.8, random_state=42
-)
+# converting dataset into x_train and y_train
+scaler = MinMaxScaler(feature_range=(0, 1))
+scaled_data = scaler.fit_transform(dataset)
 
-# Standardize the features
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+x_train, y_train = [], []
+for i in range(60, len(train)):
+    x_train.append(scaled_data[i - 60 : i, 0])
+    y_train.append(scaled_data[i, 0])
+x_train, y_train = np.array(x_train), np.array(y_train)
 
-# Reshape the input data for LSTM
-X_train_reshaped = X_train_scaled.reshape(
-    (X_train_scaled.shape[0], 1, X_train_scaled.shape[1])
-)
-X_test_reshaped = X_test_scaled.reshape(
-    (X_test_scaled.shape[0], 1, X_test_scaled.shape[1])
-)
+x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 
-# Build the LSTM model
+# create and fit the LSTM network
 model = Sequential()
-model.add(LSTM(50, activation="relu", input_shape=(1, X_train_scaled.shape[1])))
+model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
+model.add(LSTM(units=50))
 model.add(Dense(1))
 
-# Compile the model
-model.compile(optimizer=Adam(learning_rate=0.001), loss="mean_squared_error")
+new_dates = pd.DataFrame()
 
-# Train the model
-model.fit(
-    X_train_reshaped, y_train, epochs=50, batch_size=32, validation_split=0.2, verbose=2
-)
+temp = []
 
-# Evaluate the model on the test set
-y_pred = model.predict(X_test_reshaped)
-mse = mean_squared_error(y_test, y_pred)
-print(f"Mean Squared Error on Test Set: {mse}")
-plt.scatter(range(len(y_test)), y_test, c="Blue")
-plt.scatter(range(len(y_pred)), y_pred, c="Red")
+for j in range(3):
+    for i in range(1, 31):
+        temp.append(f'2020-0{j+6}-{"0" + str(i) if i < 10 else i}')
+
+
+new_dates["Date"] = temp
+new_dates["Date"] = pd.to_datetime(new_dates["Date"])
+new_dates["Days"] = (new_dates["Date"] - new_data.index.min()).dt.days
+
+# Scale the "Days" column
+new_dates["Days"] = scaler.transform(np.array(new_dates["Days"]).reshape(-1, 1))
+
+# Reshape input data for the LSTM model
+new_dates = np.reshape(new_dates["Days"].values, (new_dates["Days"].shape[0], 1, 1))
+
+model.compile(loss="mean_squared_error", optimizer="adam")
+model.fit(x_train, y_train, epochs=10, batch_size=1, verbose=2)
+
+# predicting 246 values, using past 60 from the train data
+inputs = new_data[len(new_data) - len(valid) - 60 :].values
+inputs = inputs.reshape(-1, 1)
+inputs = scaler.transform(inputs)
+
+X_test = []
+for i in range(60, inputs.shape[0]):
+    X_test.append(inputs[i - 60 : i, 0])
+X_test = np.array(X_test)
+
+X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+
+closing_price = model.predict(new_dates)
+closing_price = scaler.inverse_transform(closing_price)
+
+train = new_data[:987]
+valid = new_data[987:]
+valid["Predictions"] = closing_price
+plt.plot(train["Close"], c="Blue")
+plt.plot(valid["Predictions"], c="Red")
+plt.plot(valid["Close"], c="Pink")
 plt.show()
-
-exit()
-# Example for making a prediction using the trained model
-# Specify input parameters for prediction (same features as used during training)
-input_parameters = {
-    "Open": 18.0,
-    "High": 18.5,
-    "Low": 17.8,
-    "Volume": 4000000,
-    # Add values for other features...
-}
-
-# Transform and scale the input parameters
-input_data = scaler.transform(pd.DataFrame([input_parameters]))
-input_data_reshaped = input_data.reshape((input_data.shape[0], 1, input_data.shape[1]))
-
-# Make a prediction using the trained model
-predicted_price = model.predict(input_data_reshaped)
-
-print(f"Predicted Close Price: {predicted_price[0, 0]}")
