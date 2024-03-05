@@ -22,10 +22,18 @@ new_data.drop("Date", axis=1, inplace=True)
 
 # creating train and test sets
 dataset = new_data.values
-
+print("\n\n\n\n This is the fucnking nswer you moron: ", type(dataset))
 train = dataset[0:987, :]
-valid = dataset[987:, :]
+# arr = np.array(['2020-06-06', '2020-06-07'], dtype='datetime64')
+# arr2 = arr.astype('datetime64[D]')
+# arr3 = np.datetime64(arr, 'D')
+# Date to add
+# arr4 = np.datetime64('2020-06-06')
 
+# Append the new date to the existing array
+
+valid = dataset[987:, :]
+# valid = np.append(valid, arr4)
 # converting dataset into x_train and y_train
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaled_data = scaler.fit_transform(dataset)
@@ -44,27 +52,36 @@ model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], 1
 model.add(LSTM(units=50))
 model.add(Dense(1))
 
-new_dates = pd.DataFrame()
+# new_dates = pd.DataFrame()
 
-temp = []
+# temp = []
 
-for j in range(3):
-    for i in range(1, 31):
-        temp.append(f'2020-0{j+6}-{"0" + str(i) if i < 10 else i}')
+# for j in range(3):
+#     for i in range(1, 31):
+#         temp.append(f'2020-0{j+6}-{"0" + str(i) if i < 10 else i}')
 
 
-new_dates["Date"] = temp
-new_dates["Date"] = pd.to_datetime(new_dates["Date"])
-new_dates["Days"] = (new_dates["Date"] - new_data.index.min()).dt.days
+# new_dates["Date"] = temp
+# new_dates["Date"] = pd.to_datetime(new_dates["Date"])
 
-# Scale the "Days" column
-new_dates["Days"] = scaler.transform(np.array(new_dates["Days"]).reshape(-1, 1))
+# Assuming arr is your NumPy array with datetime64 dtype
+# arr = np.array(new_dates["Date"], dtype='datetime64')
+# print(arr)
 
-# Reshape input data for the LSTM model
-new_dates = np.reshape(new_dates["Days"].values, (new_dates["Days"].shape[0], 1, 1))
+# Convert datetime64 to int (Unix timestamp in seconds)
+# arr_as_int = (arr - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
+# print(arr_as_int)
+
+# new_dates["Days"] = (new_dates["Date"] - new_dates.index.min()).dt.days
+
+# # Scale the "Days" column
+# new_dates["Days"] = scaler.transform(np.array(new_dates["Days"]).reshape(-1, 1))
+
+# # Reshape input data for the LSTM model
+# new_dates = np.reshape(new_dates["Days"].values, (new_dates["Days"].shape[0], 1, 1))
 
 model.compile(loss="mean_squared_error", optimizer="adam")
-model.fit(x_train, y_train, epochs=10, batch_size=1, verbose=2)
+model.fit(x_train, y_train, epochs=1, batch_size=1, verbose=2)
 
 # predicting 246 values, using past 60 from the train data
 inputs = new_data[len(new_data) - len(valid) - 60 :].values
@@ -78,8 +95,9 @@ X_test = np.array(X_test)
 
 X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
 
-closing_price = model.predict(new_dates)
+closing_price = model.predict(X_test)
 closing_price = scaler.inverse_transform(closing_price)
+
 
 train = new_data[:987]
 valid = new_data[987:]
