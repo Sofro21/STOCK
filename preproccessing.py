@@ -2,7 +2,6 @@
 import pandas as pd
 from glob import glob
 import os
-import pandas as pd
 import swifter
 from ta.volatility import BollingerBands
 from ta.trend import MACD
