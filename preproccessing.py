@@ -19,6 +19,8 @@ import os
 
 def preprocess_data(file_path):
 
+    df = pd.read_csv(file_path, index_col=False)
+
     df.fillna(0, inplace=True)
 
     company_name = os.path.basename(file_path).replace(".csv", "")
