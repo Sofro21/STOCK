@@ -9,7 +9,7 @@ from sklearn.metrics import mean_squared_error
 
 
 def main1(file_path):
-    df = pd.read_csv("snp500_data/General Motors_GM_data.csv", index_col=False)
+    df = pd.read_csv(file_path, index_col=False)
     i = 0
     counter = 0
     while counter < 10:
@@ -122,7 +122,7 @@ def main1(file_path):
         counter += 1
         i += 1
         df.at[df.index[-1], "SEMA"] = y_pred[0][0]
-        df.to_csv("snp500_data/General Motors_GM_data.csv", index=False)
+        df.to_csv(file_path, index=False)
 
 
 # Plot the results
