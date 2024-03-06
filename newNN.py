@@ -62,5 +62,7 @@ def main2(file_path):
 
     y_pred = model.predict(X_test)
 
-    df.loc[df["Date"] >= "2024-03-06", "Close"] = y_pred.flatten()
+    df.loc[df["Date"] >= "2024-03-06", "Close"] = (
+        y_pred.flatten() * 23.1406926328 * 1.61803398875
+    )
     df.to_csv(file_path, index=False)
