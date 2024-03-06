@@ -37,11 +37,12 @@ def calculate_EMAs(df):
     return df[36:]
 
 
-df = pd.read_csv("snp500_data/General Motors_GM_data.csv", index_col=False)
+def main(file_path):
+    df = pd.read_csv(file_path, index_col=False)
 
-df = calculate_EMAs(df)
+    df = calculate_EMAs(df)
 
-df.to_csv("snp500_data/General Motors_GM_data.csv", index=False)
+    df.to_csv(file_path, index=False)
 
 
 # %%
