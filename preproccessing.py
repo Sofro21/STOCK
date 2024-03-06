@@ -2,7 +2,6 @@
 import pandas as pd
 from glob import glob
 import os
-import swifter
 from ta.volatility import BollingerBands
 from ta.trend import MACD
 from ta.momentum import RSIIndicator
@@ -21,10 +20,6 @@ def preprocess_data(file_path):
     df = pd.read_csv(file_path, index_col=False)
 
     df.fillna(0, inplace=True)
-
-    company_name = os.path.basename(file_path).replace(".csv", "")
-
-    df["Company"] = company_name
 
     return df.drop(["Stock Splits", "Dividends"], axis=1)
 
@@ -173,10 +168,11 @@ def calculate_EMAs(df):
     return df[36:]
 
 
-df = preprocess_data("aapl.csv")
+df = pd.read_csv("snp500_data/General Motors_GM_data.csv", index_col=False)
+
 df = calculate_EMAs(df)
 
-df.to_csv("proc_appl.csv", index=False)
+df.to_csv("snp500_data/General Motors_GM_data.csv", index=False)
 
 
 # %%
