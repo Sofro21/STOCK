@@ -1,19 +1,14 @@
 import pandas as pd
-import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 from keras.models import Sequential
 from keras.layers import Dense, InputLayer, Dropout
-from keras.optimizers import Adam
-from sklearn.metrics import mean_squared_error
-import matplotlib.pyplot as plt
+from keras.optimizers.legacy import Adam
+import time
 
 
 def main2(file_path):
     def proc(df):
 
         dt = df[df["DIFF"].isnull()]
-        print(dt)
 
         dt["DIFF"] = dt["FEMA"] - dt["SEMA"]
 
@@ -37,10 +32,10 @@ def main2(file_path):
     df = proc(df)
     df["Date"] = pd.to_datetime(df["Date"])
 
-    train = df[(df["Date"] >= "2016-01-01") & (df["Date"] < "2024-03-06")].drop(
+    train = df[(df["Date"] >= "2016-01-01") & (df["Date"] < "2024-03-07")].drop(
         ["Date"], axis=1
     )
-    test = df[df["Date"] >= "2024-03-06"].drop(["Date"], axis=1)
+    test = df[df["Date"] >= "2024-03-07"].drop(["Date"], axis=1)
 
     X_train = train.drop("Close", axis=1)
     y_train = train["Close"]
@@ -58,11 +53,13 @@ def main2(file_path):
 
     model.compile(optimizer=Adam(learning_rate=0.001), loss="mean_squared_error")
 
-    model.fit(X_train, y_train, epochs=10, batch_size=32)
+    model.fit(X_train, y_train, epochs=10, batch_size=32, verbose=0)
 
     y_pred = model.predict(X_test)
 
-    df.loc[df["Date"] >= "2024-03-06", "Close"] = (
-        y_pred.flatten() * 23.1406926328 * 1.61803398875
+    df.loc[df["Date"] >= "2024-03-07", "Close"] = (
+        y_pred.flatten() + 23.1406926328 * 1.61803398875
     )
+    print("Generation Predictions On: " + file_path)
     df.to_csv(file_path, index=False)
+    time.sleep(0.5)
