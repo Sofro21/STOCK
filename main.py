@@ -17,9 +17,9 @@ csv_path = "results.csv"
 header = ["Company", "Percentage Change"]
 
 # Writing the header to the CSV file
-"""with open(csv_path, "w", newline="") as csv_file:
-    csv_writer = csv.writer(csv_file)
-    csv_writer.writerow(header)"""
+# with open(csv_path, "w", newline="") as csv_file:
+#   csv_writer = csv.writer(csv_file)
+#    csv_writer.writerow(header)
 
 for file in files:
     print("-------------------------------------")
